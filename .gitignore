@@ -1,0 +1,14 @@
+﻿.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# The pipeline must be able to recreate the database.
+*.db
+*.sqlite
+*.sqlite3
+
+# Local/editor artifacts
+.vscode/
+.idea/
+.DS_Store
