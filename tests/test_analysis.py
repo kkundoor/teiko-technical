@@ -7,7 +7,10 @@ from analysis import (
     baseline_samples_by_project,
     baseline_subjects_by_response,
     baseline_subjects_by_sex,
+    benjamini_hochberg,
+    part3_subject_frequencies,
     relative_frequencies,
+    responder_statistics,
 )
 from load_data import create_database
 
@@ -316,6 +319,232 @@ class BaselineCohortTests(AnalysisTestCase):
             ],
         )
 
+
+
+class StatisticalAnalysisTests(AnalysisTestCase):
+    def test_subject_frequencies_average_repeated_samples(self):
+        rows = [
+            sample_row(
+                sample="yes_day0",
+                subject="subject1",
+                response="yes",
+                time_from_treatment_start=0,
+                b_cell=60,
+                cd8_t_cell=10,
+                cd4_t_cell=10,
+                nk_cell=10,
+                monocyte=10,
+            ),
+            sample_row(
+                sample="yes_day7",
+                subject="subject1",
+                response="yes",
+                time_from_treatment_start=7,
+                b_cell=40,
+                cd8_t_cell=15,
+                cd4_t_cell=15,
+                nk_cell=15,
+                monocyte=15,
+            ),
+        ]
+
+        db_path = self.create_test_database(rows)
+
+        values = part3_subject_frequencies(db_path)
+
+        b_cell = next(
+            row
+            for row in values
+            if row["population"] == "b_cell"
+        )
+
+        self.assertEqual(b_cell["sample_count"], 2)
+        self.assertAlmostEqual(
+            b_cell["mean_percentage"],
+            50.0,
+        )
+
+
+    def test_part3_cohort_includes_repeated_timepoints_and_filters_scope(self):
+        rows = [
+            sample_row(
+                sample="included_day0",
+                subject="included",
+                response="yes",
+                time_from_treatment_start=0,
+            ),
+            sample_row(
+                sample="included_day7",
+                subject="included",
+                response="yes",
+                time_from_treatment_start=7,
+            ),
+            sample_row(
+                sample="included_day14",
+                subject="included",
+                response="yes",
+                time_from_treatment_start=14,
+            ),
+            sample_row(
+                sample="wrong_condition",
+                subject="wrong_condition",
+                condition="carcinoma",
+            ),
+            sample_row(
+                sample="wrong_treatment",
+                subject="wrong_treatment",
+                treatment="phauximab",
+            ),
+            sample_row(
+                sample="wrong_type",
+                subject="wrong_type",
+                sample_type="WB",
+            ),
+            sample_row(
+                sample="missing_response",
+                subject="missing_response",
+                response=None,
+            ),
+        ]
+
+        db_path = self.create_test_database(rows)
+
+        values = part3_subject_frequencies(db_path)
+
+        subjects = {
+            row["subject"]
+            for row in values
+        }
+
+        self.assertEqual(
+            subjects,
+            {"included"},
+        )
+
+        self.assertEqual(
+            len(values),
+            5,
+        )
+
+        self.assertEqual(
+            {
+                row["sample_count"]
+                for row in values
+            },
+            {3},
+        )
+    def test_benjamini_hochberg_adjustment(self):
+        adjusted = benjamini_hochberg([
+            0.01,
+            0.04,
+            0.03,
+            0.002,
+        ])
+
+        expected = [
+            0.02,
+            0.04,
+            0.04,
+            0.008,
+        ]
+
+        for actual, expected_value in zip(
+            adjusted,
+            expected,
+        ):
+            self.assertAlmostEqual(
+                actual,
+                expected_value,
+            )
+
+    def test_responder_statistics_count_subjects_not_samples(self):
+        rows = [
+            sample_row(
+                sample="yes1_day0",
+                subject="yes1",
+                response="yes",
+                b_cell=60,
+                cd8_t_cell=10,
+                cd4_t_cell=10,
+                nk_cell=10,
+                monocyte=10,
+            ),
+            sample_row(
+                sample="yes1_day7",
+                subject="yes1",
+                response="yes",
+                time_from_treatment_start=7,
+                b_cell=70,
+                cd8_t_cell=8,
+                cd4_t_cell=8,
+                nk_cell=7,
+                monocyte=7,
+            ),
+            sample_row(
+                sample="yes2",
+                subject="yes2",
+                response="yes",
+                b_cell=65,
+                cd8_t_cell=9,
+                cd4_t_cell=9,
+                nk_cell=9,
+                monocyte=8,
+            ),
+            sample_row(
+                sample="no1_day0",
+                subject="no1",
+                response="no",
+                b_cell=20,
+                cd8_t_cell=20,
+                cd4_t_cell=20,
+                nk_cell=20,
+                monocyte=20,
+            ),
+            sample_row(
+                sample="no1_day7",
+                subject="no1",
+                response="no",
+                time_from_treatment_start=7,
+                b_cell=10,
+                cd8_t_cell=23,
+                cd4_t_cell=23,
+                nk_cell=22,
+                monocyte=22,
+            ),
+            sample_row(
+                sample="no2",
+                subject="no2",
+                response="no",
+                b_cell=15,
+                cd8_t_cell=22,
+                cd4_t_cell=21,
+                nk_cell=21,
+                monocyte=21,
+            ),
+        ]
+
+        db_path = self.create_test_database(rows)
+
+        results = responder_statistics(db_path)
+
+        b_cell = next(
+            row
+            for row in results
+            if row["population"] == "b_cell"
+        )
+
+        self.assertEqual(
+            b_cell["responder_n"],
+            2,
+        )
+        self.assertEqual(
+            b_cell["nonresponder_n"],
+            2,
+        )
+        self.assertGreater(
+            b_cell["rank_biserial"],
+            0,
+        )
 
 if __name__ == "__main__":
     unittest.main()
