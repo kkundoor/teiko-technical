@@ -10,4 +10,4 @@ pipeline:
 	$(PYTHON) pipeline.py
 
 dashboard:
-	$(PYTHON) -m streamlit run dashboard.py --server.address=0.0.0.0 --server.port=8501 --browser.gatherUsageStats=false
+	$(PYTHON) -m streamlit run dashboard.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true --browser.gatherUsageStats=false

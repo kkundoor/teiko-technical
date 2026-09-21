@@ -35,7 +35,7 @@ POPULATION_LABEL_ORDER = [
 
 
 st.set_page_config(
-    page_title="Teiko Technical Analysis",
+    page_title="Immune Cell Population Analysis",
     layout="wide",
 )
 
@@ -108,9 +108,9 @@ st.caption(
 
 part2_tab, part3_tab, part4_tab = st.tabs(
     [
-        "Part 2 · Relative frequencies",
-        "Part 3 · Responder comparison",
-        "Part 4 · Baseline cohort",
+        "Part 2: Relative Cell Frequencies",
+        "Part 3: Responder Comparison",
+        "Part 4: Baseline and Subset Analysis",
     ]
 )
 
@@ -120,7 +120,7 @@ part2_tab, part3_tab, part4_tab = st.tabs(
 # ============================================================
 
 with part2_tab:
-    st.header("Relative cell frequencies")
+    st.header("Relative Cell Frequencies")
 
     st.write(
         "For each sample, the five measured cell populations "
@@ -218,7 +218,7 @@ with part2_tab:
         width="stretch",
     )
 
-    with st.expander("View complete relative-frequency summary"):
+    with st.expander("View Complete Relative-Frequency Summary"):
         st.caption(
             f"{len(relative):,} population-level rows across "
             f"{relative['sample'].nunique():,} samples."
@@ -252,7 +252,16 @@ with part2_tab:
 # ============================================================
 
 with part3_tab:
-    st.header("Responder vs. non-responder comparison")
+    st.header(
+        "Responder vs. Non-Responder Comparison"
+    )
+
+    st.write(
+        "Cohort: melanoma patients receiving miraclib, using "
+        "PBMC samples only. Each subject contributes one mean "
+        "relative frequency per population across days 0, 7, "
+        "and 14."
+    )
 
     subject_frequencies = load_subject_frequencies(
         db_version
@@ -308,7 +317,7 @@ with part3_tab:
         f"{nonresponder_count:,}",
     )
     col4.metric(
-        "BH-adjusted p < 0.05",
+        "BH-Adjusted p < 0.05",
         significant_count,
     )
 
@@ -420,16 +429,20 @@ with part3_tab:
         f"{strongest['median_difference']:+.3f} pp)."
     )
 
-    with st.expander("Statistical method"):
+    with st.expander("Statistical Method"):
         st.write(
             "Each subject contributes one value per population: "
             "the mean relative frequency across that subject's "
-            "longitudinal samples. Responders and non-responders "
-            "are compared with a two-sided Mann-Whitney U test. "
-            "The five population-level p-values are adjusted "
-            "using Benjamini-Hochberg FDR correction at 0.05. "
-            "Rank-biserial correlation is reported as an "
-            "effect-size measure."
+            "days 0, 7, and 14 samples. Responders and "
+            "non-responders are compared with a two-sided "
+            "Mann-Whitney U test. The five population-level "
+            "p-values are adjusted using Benjamini-Hochberg FDR "
+            "correction at 0.05. Rank-biserial correlation is "
+            "reported as an effect-size measure. This evaluates "
+            "an overall responder/non-responder difference across "
+            "the observed period; it does not estimate a "
+            "time-specific treatment trajectory or out-of-sample "
+            "predictive performance."
         )
 
 
@@ -438,11 +451,15 @@ with part3_tab:
 # ============================================================
 
 with part4_tab:
-    st.header("Baseline melanoma cohort")
+    st.header("Baseline and Subset Analysis")
+
+    st.subheader(
+        "Baseline Miraclib PBMC Cohort"
+    )
 
     st.write(
-        "Cohort: melanoma, miraclib treatment, PBMC sample, "
-        "and time from treatment start = 0."
+        "Melanoma patients receiving miraclib, using PBMC "
+        "samples at time from treatment start = 0."
     )
 
     cohort = load_baseline_cohort(db_version)
@@ -459,7 +476,7 @@ with part4_tab:
     project_col, response_col, sex_col = st.columns(3)
 
     with project_col:
-        st.subheader("Samples by project")
+        st.subheader("Samples by Project")
 
         project_chart = px.bar(
             projects,
@@ -484,7 +501,7 @@ with part4_tab:
         )
 
     with response_col:
-        st.subheader("Subjects by response")
+        st.subheader("Subjects by Response")
 
         response_display = responses.copy()
 
@@ -514,12 +531,16 @@ with part4_tab:
             response_display,
             x="response",
             y="subject_count",
+            color="response",
             labels={
                 "response": "Response",
                 "subject_count": "Subjects",
             },
             text_auto=True,
-            color_discrete_sequence=["#6FA3D2"],
+            color_discrete_map={
+                "Responder": "#5B8E7D",
+                "Non-responder": "#7C8796",
+            },
         )
 
         response_chart.update_layout(
@@ -533,7 +554,7 @@ with part4_tab:
         )
 
     with sex_col:
-        st.subheader("Subjects by sex")
+        st.subheader("Subjects by Sex")
 
         sex_display = sexes.copy()
 
@@ -566,7 +587,7 @@ with part4_tab:
             width="stretch",
         )
 
-    with st.expander("View all baseline samples"):
+    with st.expander("View All Baseline Samples"):
         cohort_display = cohort.copy()
 
         cohort_display["response"] = (
@@ -609,7 +630,7 @@ with part4_tab:
     st.divider()
 
     st.subheader(
-        "B-cell average for melanoma male responders"
+        "B-Cell Average for Melanoma Male Responders"
     )
 
     st.write(
@@ -620,7 +641,7 @@ with part4_tab:
     subset_count_col, subset_average_col = st.columns(2)
 
     subset_count_col.metric(
-        "Matching samples",
+        "Matching Samples",
         f"{b_cell_summary['sample_count']:,}",
     )
 
@@ -629,7 +650,7 @@ with part4_tab:
     ]
 
     subset_average_col.metric(
-        "Average B-cell count",
+        "Average B-Cell Count",
         (
             f"{average_b_cells:.2f}"
             if average_b_cells is not None
