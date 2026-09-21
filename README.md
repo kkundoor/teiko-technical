@@ -6,7 +6,7 @@ The project loads `cell-count.csv` into SQLite, computes relative cell-populatio
 
 ## Dashboard
 
-Public dashboard link: pending deployment.
+Public dashboard: https://teiko-immune-cell-dashboard.streamlit.app
 
 Run locally or in GitHub Codespaces:
 
