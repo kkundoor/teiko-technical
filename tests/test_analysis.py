@@ -8,11 +8,17 @@ from analysis import (
     baseline_subjects_by_response,
     baseline_subjects_by_sex,
     benjamini_hochberg,
+    melanoma_male_responder_baseline_b_cell_summary,
     part3_subject_frequencies,
     relative_frequencies,
     responder_statistics,
 )
+from data_validation import load_validated_rows
 from load_data import create_database
+
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA_PATH = ROOT / "cell-count.csv"
 
 
 def sample_row(**overrides):
@@ -319,6 +325,141 @@ class BaselineCohortTests(AnalysisTestCase):
             ],
         )
 
+
+
+class Part4SubsetTests(AnalysisTestCase):
+    def test_b_cell_summary_uses_all_treatments_and_sample_types(self):
+        rows = [
+            sample_row(
+                sample="included_pbmc",
+                subject="included_pbmc",
+                treatment="miraclib",
+                sample_type="PBMC",
+                b_cell=100,
+            ),
+            sample_row(
+                sample="included_wb",
+                subject="included_wb",
+                treatment="phauximab",
+                sample_type="WB",
+                b_cell=200,
+            ),
+            sample_row(
+                sample="wrong_sex",
+                subject="wrong_sex",
+                sex="F",
+                b_cell=900,
+            ),
+            sample_row(
+                sample="wrong_response",
+                subject="wrong_response",
+                response="no",
+                b_cell=900,
+            ),
+            sample_row(
+                sample="wrong_time",
+                subject="wrong_time",
+                time_from_treatment_start=7,
+                b_cell=900,
+            ),
+            sample_row(
+                sample="wrong_condition",
+                subject="wrong_condition",
+                condition="carcinoma",
+                b_cell=900,
+            ),
+        ]
+
+        db_path = self.create_test_database(rows)
+
+        result = (
+            melanoma_male_responder_baseline_b_cell_summary(
+                db_path
+            )
+        )
+
+        self.assertEqual(
+            result["sample_count"],
+            2,
+        )
+
+        self.assertAlmostEqual(
+            result["average_b_cells"],
+            150.0,
+        )
+
+    def test_b_cell_summary_handles_empty_subset(self):
+        db_path = self.create_test_database([
+            sample_row(
+                sample="nonmatching",
+                subject="nonmatching",
+                condition="carcinoma",
+            )
+        ])
+
+        result = (
+            melanoma_male_responder_baseline_b_cell_summary(
+                db_path
+            )
+        )
+
+        self.assertEqual(
+            result["sample_count"],
+            0,
+        )
+
+        self.assertIsNone(
+            result["average_b_cells"]
+        )
+
+    def test_b_cell_summary_matches_provided_dataset(self):
+        rows = load_validated_rows(
+            DATA_PATH
+        )
+
+        matching = [
+            row
+            for row in rows
+            if (
+                row["condition"] == "melanoma"
+                and row["sex"] == "M"
+                and row["response"] == "yes"
+                and row["time_from_treatment_start"] == 0
+            )
+        ]
+
+        self.assertGreater(
+            len(matching),
+            0,
+        )
+
+        expected_average = (
+            sum(
+                row["b_cell"]
+                for row in matching
+            )
+            / len(matching)
+        )
+
+        db_path = self.create_test_database(
+            rows
+        )
+
+        result = (
+            melanoma_male_responder_baseline_b_cell_summary(
+                db_path
+            )
+        )
+
+        self.assertEqual(
+            result["sample_count"],
+            len(matching),
+        )
+
+        self.assertAlmostEqual(
+            result["average_b_cells"],
+            expected_average,
+        )
 
 
 class StatisticalAnalysisTests(AnalysisTestCase):

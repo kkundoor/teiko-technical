@@ -10,6 +10,7 @@ from analysis import (
     baseline_samples_by_project,
     baseline_subjects_by_response,
     baseline_subjects_by_sex,
+    melanoma_male_responder_baseline_b_cell_summary,
     part3_subject_frequencies,
     relative_frequencies,
     responder_statistics,
@@ -91,6 +92,11 @@ def load_sex_summary(db_version):
     return pd.DataFrame(
         baseline_subjects_by_sex()
     )
+
+
+@st.cache_data
+def load_b_cell_summary(db_version):
+    return melanoma_male_responder_baseline_b_cell_summary()
 
 
 st.title("Immune Cell Population Analysis")
@@ -443,6 +449,7 @@ with part4_tab:
     projects = load_project_summary(db_version)
     responses = load_response_summary(db_version)
     sexes = load_sex_summary(db_version)
+    b_cell_summary = load_b_cell_summary(db_version)
 
     st.metric(
         "Baseline cohort samples",
@@ -597,4 +604,40 @@ with part4_tab:
             cohort_display,
             hide_index=True,
             width="stretch",
+        )
+
+    st.divider()
+
+    st.subheader(
+        "B-cell average for melanoma male responders"
+    )
+
+    st.write(
+        "Melanoma male responders at time 0 across all "
+        "treatments and sample types."
+    )
+
+    subset_count_col, subset_average_col = st.columns(2)
+
+    subset_count_col.metric(
+        "Matching samples",
+        f"{b_cell_summary['sample_count']:,}",
+    )
+
+    average_b_cells = b_cell_summary[
+        "average_b_cells"
+    ]
+
+    subset_average_col.metric(
+        "Average B-cell count",
+        (
+            f"{average_b_cells:.2f}"
+            if average_b_cells is not None
+            else "N/A"
+        ),
+    )
+
+    if average_b_cells is None:
+        st.info(
+            "No samples match this subset."
         )

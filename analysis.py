@@ -176,6 +176,46 @@ def baseline_subjects_by_sex(db_path=DB_PATH):
     finally:
         connection.close()
 
+
+def melanoma_male_responder_baseline_b_cell_summary(
+    db_path=DB_PATH,
+):
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+
+    try:
+        row = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS sample_count,
+                AVG(c.count) AS average_b_cells
+            FROM cell_counts AS c
+            JOIN samples AS sa
+                ON sa.sample = c.sample
+            JOIN subjects AS s
+                ON s.subject = sa.subject
+            WHERE
+                s.condition = 'melanoma'
+                AND s.sex = 'M'
+                AND s.response = 'yes'
+                AND sa.time_from_treatment_start = 0
+                AND c.population = 'b_cell'
+            """
+        ).fetchone()
+
+        return {
+            "sample_count": row["sample_count"],
+            "average_b_cells": (
+                float(row["average_b_cells"])
+                if row["average_b_cells"] is not None
+                else None
+            ),
+        }
+
+    finally:
+        connection.close()
+
+
 def part3_subject_frequencies(db_path=DB_PATH):
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
