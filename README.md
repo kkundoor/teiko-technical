@@ -1,21 +1,111 @@
-# Teiko Technical Assessment
+# Immune Cell Population Analysis
 
-Analysis of immune-cell population data from clinical-trial samples.
+Reproducible SQLite pipeline, statistical analysis, and Streamlit dashboard for immune-cell population data from clinical-trial samples.
 
-The project will provide:
+The project loads `cell-count.csv` into SQLite, computes relative cell-population frequencies, compares melanoma responder and non-responder cohorts, and presents the requested Part 2, Part 3, and Part 4 results.
 
-- a reproducible SQLite data pipeline,
-- relative-frequency analysis of immune-cell populations,
-- responder vs. non-responder statistical analysis,
-- the requested baseline cohort queries,
-- an interactive dashboard for the analytical results.
+## Dashboard
 
-Setup and reproduction instructions will be added as the implementation is completed.
+Public dashboard link: pending deployment.
 
-## Statistical approach
+Run locally or in GitHub Codespaces:
 
-For the responder/non-responder comparison, each subject contributes one value per immune-cell population: the mean relative frequency across that subject's available longitudinal samples. This avoids treating repeated measurements from the same subject as independent observations.
+```bash
+make setup
+make dashboard
+```
 
-Each population is compared between responders and non-responders using a two-sided Mann-Whitney U test. P-values across the five population comparisons are adjusted using the Benjamini-Hochberg procedure with an FDR threshold of 0.05. Rank-biserial correlation is reported as an effect-size measure.
+The dashboard automatically builds `cell-count.db` from `cell-count.csv` if the database is missing.
 
-In the supplied dataset, no population remains statistically significant after FDR correction. CD4 T cells show the strongest directional difference, with higher relative frequency among responders, but do not meet the adjusted significance threshold.
+## Reproduce the Pipeline
+
+```bash
+make setup
+make pipeline
+```
+
+`make pipeline` rebuilds the database and prints the analytical outputs.
+
+## Data Model
+
+The database has three normalized tables:
+
+- `subjects`: subject-level metadata
+- `samples`: sample type and treatment-time metadata
+- `cell_counts`: one row per sample and measured population
+
+Measured populations:
+
+- `b_cell`
+- `cd8_t_cell`
+- `cd4_t_cell`
+- `nk_cell`
+- `monocyte`
+
+`cell-count.db` is generated and intentionally ignored by git.
+
+## Part 2
+
+Relative frequency is calculated per sample as:
+
+```text
+population count / total measured count * 100
+```
+
+Output columns:
+
+```text
+sample,total_count,population,count,percentage
+```
+
+The supplied dataset produces 52,500 population-level relative-frequency rows.
+
+## Part 3
+
+The responder comparison uses melanoma patients receiving `miraclib` with PBMC samples and known response status.
+
+Each subject contributes one value per population: the mean relative frequency across days 0, 7, and 14. This avoids treating repeated samples from the same subject as independent observations.
+
+For each population, responders and non-responders are compared using a two-sided Mann-Whitney U test. The five p-values are adjusted with Benjamini-Hochberg FDR correction at 0.05. Rank-biserial correlation is reported as an effect-size measure.
+
+No population remains statistically significant after FDR correction. CD4 T cells show the strongest directional difference, with higher relative frequency among responders, but do not meet the adjusted significance threshold.
+
+## Part 4
+
+For melanoma patients receiving `miraclib` with PBMC samples at time 0:
+
+- baseline samples: 656
+- samples by project: `prj1=384`, `prj3=272`
+- subjects by response: `no=325`, `yes=331`
+- subjects by sex: `F=312`, `M=344`
+
+For melanoma male responders at time 0 across all sample and treatment types, the average B-cell count is:
+
+```text
+10206.15
+```
+
+This final subset intentionally does not inherit the earlier Part 4 `miraclib` or PBMC filters.
+
+## Tests
+
+Run:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Current suite: 27 tests.
+
+## Files
+
+- `cell-count.csv`: source data
+- `schema.sql`: SQLite schema
+- `data_validation.py`: CSV validation
+- `load_data.py`: database build logic
+- `analysis.py`: analytical queries and statistics
+- `pipeline.py`: command-line output
+- `dashboard.py`: Streamlit dashboard
+- `tests/`: unit tests
+- `Makefile`: setup, pipeline, dashboard commands
+- `requirements.txt`: dependencies
