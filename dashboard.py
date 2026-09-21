@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 
 import pandas as pd
 import plotly.express as px
@@ -42,12 +43,27 @@ st.set_page_config(
 
 
 if not DB_PATH.exists():
+    temp_path = None
+
     try:
         with st.spinner(
             "Building SQLite database from cell-count.csv..."
         ):
-            build_database(DB_PATH)
+            with tempfile.NamedTemporaryFile(
+                prefix="cell-count-",
+                suffix=".db",
+                dir=ROOT,
+                delete=False,
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+            build_database(temp_path)
+            temp_path.replace(DB_PATH)
+
     except Exception as error:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
         st.error(
             "Could not build the SQLite database from "
             "cell-count.csv."
