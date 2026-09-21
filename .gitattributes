@@ -1,7 +1,11 @@
-﻿* text=auto
+* text=auto
 
 *.py text eol=lf
 *.md text eol=lf
-Makefile text eol=lf
+*.sql text eol=lf
+*.toml text eol=lf
 *.txt text eol=lf
 *.csv text eol=lf
+Makefile text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf

@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import sqlite3
 
 from data_validation import CELL_COLUMNS, load_validated_rows
