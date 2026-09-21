@@ -3,6 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA_PATH = ROOT / "cell-count.csv"
+
+
 from data_validation import (
     COLUMNS,
     DataValidationError,
@@ -134,7 +139,7 @@ class SourceValidationTests(unittest.TestCase):
 
     def test_provided_dataset_passes_validation(self):
         rows = load_validated_rows(
-            Path("cell-count.csv")
+            DATA_PATH
         )
 
         self.assertGreater(len(rows), 0)
