@@ -15,6 +15,7 @@ from analysis import (
     relative_frequencies,
     responder_statistics,
 )
+from load_data import build_database
 
 
 ROOT = Path(__file__).resolve().parent
@@ -41,11 +42,18 @@ st.set_page_config(
 
 
 if not DB_PATH.exists():
-    st.error(
-        "Database not found. Run `python load_data.py` "
-        "before starting the dashboard."
-    )
-    st.stop()
+    try:
+        with st.spinner(
+            "Building SQLite database from cell-count.csv..."
+        ):
+            build_database(DB_PATH)
+    except Exception as error:
+        st.error(
+            "Could not build the SQLite database from "
+            "cell-count.csv."
+        )
+        st.exception(error)
+        st.stop()
 
 
 db_version = DB_PATH.stat().st_mtime_ns

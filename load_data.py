@@ -127,6 +127,12 @@ def create_database(rows, db_path=DB_PATH):
         connection.close()
 
 
+def build_database(db_path=DB_PATH):
+    rows = load_validated_rows(DATA_PATH)
+
+    create_database(rows, db_path)
+
+
 def table_count(db_path, table):
     connection = sqlite3.connect(db_path)
 
@@ -139,9 +145,7 @@ def table_count(db_path, table):
 
 
 def main():
-    rows = load_validated_rows(DATA_PATH)
-
-    create_database(rows, DB_PATH)
+    build_database(DB_PATH)
 
     print(f"Created {DB_PATH.name}")
     print(f"Subjects:    {table_count(DB_PATH, 'subjects'):,}")
