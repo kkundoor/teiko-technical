@@ -68,7 +68,7 @@ Each subject contributes one value per population: the mean relative frequency a
 
 For each population, responders and non-responders are compared using a two-sided Mann-Whitney U test. The five p-values are adjusted with Benjamini-Hochberg FDR correction at 0.05. Rank-biserial correlation is reported as an effect-size measure.
 
-No population remains statistically significant after FDR correction. CD4 T cells show the strongest directional difference, with higher relative frequency among responders, but do not meet the adjusted significance threshold.
+No cell population remains statistically significant after Benjamini-Hochberg correction at FDR 0.05. CD4 T cells have the smallest adjusted p-value (raw p = 0.0124; adjusted p = 0.0621) and a higher median relative frequency among responders. Their unadjusted result meets the 0.05 threshold, but the adjusted result does not.
 
 ## Part 4
 
